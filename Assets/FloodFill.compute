@@ -1,0 +1,154 @@
+﻿#pragma enable_d3d11_debug_symbols
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSInit
+#pragma kernel CSFlood
+#pragma kernel CSResolve
+
+struct FloodPixel
+{
+	uint2 src;
+	int2 offset;
+	int valid;
+	int filled;
+	uint steps;
+};
+
+RWTexture2D<float4> Result;
+RWStructuredBuffer<FloodPixel> pixels;
+Texture2D<float4> Mask;
+float iters;
+
+uint ToLinear( uint2 id)
+{
+	return ((uint)((id).x+(id).y*4096));
+} 
+
+
+float Compare(FloodPixel a, FloodPixel b)
+{
+
+	if (a.src.x != b.src.x)
+		return sign(a.src.x-b.src.x);
+	else if (a.src.y != b.src.y )
+		return sign(a.src.y-b.src.y);
+	else
+		return 0;
+	
+
+}
+
+bool IsMax(FloodPixel test, FloodPixel a, FloodPixel b, FloodPixel c, FloodPixel d)
+{
+	return Compare(test, a) >0 && Compare(test, b) >0 && Compare(test, c) >0  &&Compare(test, d) >0 ;
+
+}
+
+uint2 WrapId( int2 id)
+{
+	uint2 newID = (id+int2(4096,4096)) % 4096;
+	return newID;
+}
+
+
+[numthreads(32,32,1)]
+void CSInit (uint3 id : SV_DispatchThreadID)
+{
+	float m = step(0.5,Mask[id.xy].g);
+	float s = step(0.9999,Mask[id.xy].r);
+	
+	uint buffID = ToLinear(id.xy);
+	pixels[buffID].src = id.xy;
+	pixels[buffID].offset = 0;
+	pixels[buffID].steps = 0;
+	if ( s > 0.5 && m > 0.5)
+		pixels[buffID].filled = 1;
+	else
+		pixels[buffID].filled = 0;
+
+	if ( m > 0.5)		
+		pixels[buffID].valid = 1;
+	else		
+	{
+		pixels[buffID].valid = 0;
+		
+	}
+}
+
+
+[numthreads(32,32,1)]
+void CSFlood (uint3 id : SV_DispatchThreadID)
+{
+	uint buffID = ToLinear(id.xy);
+	FloodPixel maxValue = pixels[buffID];
+	FloodPixel newValue = pixels[buffID];
+	int2 offset = 0;
+	bool filled = false;
+	if (pixels[buffID].valid > 0)
+	{
+		int2 sid = id.xy;
+		int2 id_a = sid.xy+int2(1, 0);
+		int2 id_b = sid.xy+int2(-1,0);
+		int2 id_c = sid.xy+int2(0, 1);
+		int2 id_d = sid.xy+int2(0,-1);
+		FloodPixel a = pixels[ToLinear(WrapId(id_a))] ;
+		FloodPixel b = pixels[ToLinear(WrapId(id_b))] ;
+		FloodPixel c = pixels[ToLinear(WrapId(id_c))] ;
+		FloodPixel d = pixels[ToLinear(WrapId(id_d))] ;
+		FloodPixel e = pixels[buffID] ;
+		
+		if ( IsMax( a,b,c,d,e) && a.valid > 0 && a.filled > 0)
+		{
+			maxValue  = a;
+			filled = true;
+			offset = int2(1,0);
+		}
+		else if ( IsMax( b,c,d,e,a) && b.valid > 0 && b.filled>0)
+		{
+			maxValue  = b;
+			filled = true;
+			offset = int2(-1,0);
+		}
+		else if ( IsMax( c,d,e,a,b) && c.valid > 0 && c.filled>0)
+		{
+			maxValue  = c;
+			filled = true;
+			offset = int2(0,1);
+
+		}
+		else if ( IsMax( d,e,a,b,c) && d.valid > 0 && d.filled>0)
+		{
+			maxValue  = d;
+			filled = true;
+			offset = int2(0,-1);
+		}
+	}
+
+	if (newValue.src.x == maxValue.src.x && newValue.src.y == maxValue.src.y)
+		filled = false;
+	if (filled)
+	{
+		newValue.src = maxValue.src;
+		newValue.steps = maxValue.steps+1;
+		newValue.offset = maxValue.offset+offset;
+		newValue.valid = 1;
+		newValue.filled = 1;
+	}
+
+	AllMemoryBarrierWithGroupSync();
+
+	pixels[buffID] = newValue;
+	
+}
+
+
+[numthreads(32,32,1)]
+void CSResolve(uint3 id : SV_DispatchThreadID)
+{
+	
+	int buffID = ToLinear(id.xy);
+	float4 r;
+	r.xy = pixels[buffID].offset.xy/4096.0;
+	r.z = pixels[buffID].valid;
+	r.a = pixels[buffID].steps;
+	Result[id.xy] = r;
+}
