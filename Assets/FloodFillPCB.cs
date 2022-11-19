@@ -79,7 +79,7 @@ public class FloodFillPCB : MonoBehaviour
 		floodShader.Dispatch(kResolve,4096/32,4096/32,1);	
 
 		yield return null;
-		for ( int i = 0; i < 1024; i++)
+		for ( int i = 0; i < 4096*3; i++)
 		{
 			Debug.Log(i);
 			floodShader.SetFloat("iter",i+1);
@@ -92,15 +92,7 @@ public class FloodFillPCB : MonoBehaviour
 			floodShader.Dispatch(kResolve,4096/32,4096/32,1);			
 			yield return null;
 
-			if ( i %100 == 0 )	
-			{
-				// Texture2D ttt = new Texture2D(4096,4096, UnityEngine.Experimental.Rendering.DefaultFormat.HDR, UnityEngine.Experimental.Rendering.TextureCreationFlags.None);
-				// RenderTexture.active = (texture);
-				// ttt.ReadPixels(new Rect(0,0,4096,4096), 0,0);
-				// RenderTexture.active = (null);
-				// AssetDatabase.CreateAsset(ttt, "Assets/pcb4.asset");			
-				
-			}
+
 		}
 		buffer.Release();
 

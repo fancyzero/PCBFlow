@@ -6,7 +6,7 @@
 
 struct FloodPixel
 {
-	uint2 src;
+	int2 src;
 	int2 offset;
 	int valid;
 	int filled;
@@ -26,11 +26,16 @@ uint ToLinear( uint2 id)
 
 float Compare(FloodPixel a, FloodPixel b)
 {
-
-	if (a.src.x != b.src.x)
-		return sign(a.src.x-b.src.x);
-	else if (a.src.y != b.src.y )
-		return sign(a.src.y-b.src.y);
+	if (a.filled != b.filled)
+	{
+		return a.filled - b.filled;
+	}
+	int2 aa = a.src;
+	int2 bb = b.src;
+	if (aa.x != bb.x)
+		return sign(aa.x - bb.x);
+	else if (aa.y != bb.y )
+		return sign(aa.y-bb.y);
 	else
 		return 0;
 	
@@ -39,7 +44,7 @@ float Compare(FloodPixel a, FloodPixel b)
 
 bool IsMax(FloodPixel test, FloodPixel a, FloodPixel b, FloodPixel c, FloodPixel d)
 {
-	return Compare(test, a) >0 && Compare(test, b) >0 && Compare(test, c) >0  &&Compare(test, d) >0 ;
+	return Compare(test, a) >=0 && Compare(test, b) >=0 && Compare(test, c) >=0  &&Compare(test, d) >=0 ;
 
 }
 

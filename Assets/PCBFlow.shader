@@ -4,7 +4,7 @@
     {
         _MainTex ("Texture", 2D) = "white" {}
         _PCB ("pcb", 2D) = "white" {}
-        _Blend("blend", range(-25,25)) = 0
+        _Blend("blend", range(-10,10)) = 0
     }
     SubShader
     {
@@ -66,19 +66,23 @@
             }
             fixed4 frag (v2f i) : SV_Target
             {
+                float2 sampleUV = i.uv;
+                sampleUV.y = 1- sampleUV.y;
                 float4 pcb = tex2D(_PCB, i.uv);
-                float4 col = tex2D(_MainTex, i.uv);
-                float mask = step(0.9991,col.r);
-                return col.aaaa/409600;
-                float2 startUV = saturate(col.yz/4096) + floor(i.uv);
-                if ( startUV.y > i.uv.y)
-                    startUV.y -=1;
+                float4 col = tex2D(_MainTex, sampleUV);
+                col.a /= 8472.000000;
+                col.a = saturate(col.a);
+                
+                float mask = step(0.9991,col.b);
+
+                float2 startUV = col.xy + (i.uv);
+  
                 float3 startWPos = uv2world(startUV);
                 
                 float timeOfStart = 0;
-                float currentTime = _Blend+startWPos.z + (hash(startWPos.xz*4096)*0.5-0.25);
-                float progress = pow(col.a,1);
-                return smoothstep(0.01,0.1,currentTime-progress)*pcb.g;
+                float currentTime = _Blend+startWPos.z ;//+ (hash(startWPos.xz*100000)-0.5)*2;
+                float progress = pow(col.a,2);
+                return smoothstep(0.01,0.1,currentTime-progress)*mask*pcb.g;
                 // float2 startUV = col.yz/4096;
                 // float d = length(startUV-0.5);
                 // d = (d - _Blend);

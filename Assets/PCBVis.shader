@@ -5,7 +5,7 @@
 		_MainTex ("Texture", 2D) = "white" {}
 		_PCB ("pcb", 2D) = "white" {}
 		_Blend("blend", range(0,1)) = 0
-		_Alpha("alphaView", range(0,1000)) = 0
+		_Alpha("alphaView", range(0,12000)) = 0
 	}
 	SubShader
 	{
@@ -57,8 +57,8 @@
 				// apply fog
 				
 				// return lerp(float4(col.xy*col.z*col.a,0,1) ,float4(-col.xy*col.z*col.a,0,1),_Blend);
-				return col.a/_Alpha;
-				return float4((col.xy),0,1) ;
+				
+				return float4((col.xy+1)/2,col.a/_Alpha,1) ;
 			}
 			ENDCG
 		}
