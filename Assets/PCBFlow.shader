@@ -83,17 +83,7 @@
                 float currentTime = _Blend+startWPos.z ;//+ (hash(startWPos.xz*100000)-0.5)*2;
                 float progress = pow(col.a,2);
                 return smoothstep(0.01,0.1,currentTime-progress)*mask*pcb.g;
-                // float2 startUV = col.yz/4096;
-                // float d = length(startUV-0.5);
-                // d = (d - _Blend);
-                // d = smoothstep(0.,1,(d))*1.4;
-                // // sample the texture
-                
-                
-                
-                // // apply fog
-                
-                // return step(d, col.aaaa)*pcb.g;
+
             }
             ENDCG
         }

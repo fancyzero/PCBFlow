@@ -1,0 +1,55 @@
+﻿#pragma kernel CSInit
+#pragma kernel CSDetectCircle
+#pragma kernel CSResolve
+
+RWTexture2D<float4> Result;
+Texture2D<float4> Kernel;
+Texture2D<float4> Input;
+int threshold;
+int kernelSize;
+
+
+
+[numthreads(32,32,1)]
+void CSInit (uint3 id : SV_DispatchThreadID)
+{
+    Result[id.xy] = 0;
+}
+
+[numthreads(32,32,1)]
+void CSDetectCircle (uint3 id : SV_DispatchThreadID)
+{
+    float score = 0;
+    int halfSize = kernelSize / 2;
+    for ( int i = 0; i < kernelSize; i++)
+    {
+        for ( int j = 0; j <  kernelSize; j++)
+        {
+            int2 offset = int2(i,j);
+
+
+            score +=(Kernel[offset].r )*  Input[id.xy+offset-halfSize].r;
+        }
+    }
+    if ( score > threshold)
+    {
+        for ( int i = 0; i < kernelSize; i++)
+        {
+            for ( int j = 0; j <  kernelSize; j++)
+            {
+                int2 offset = int2(i,j);
+
+
+                Result[id.xy+offset-halfSize] = 1*Input[id.xy+offset-halfSize].r;
+            }
+        }
+    }
+
+}
+
+
+[numthreads(32,32,1)]
+void CSResolve(uint3 id : SV_DispatchThreadID)
+{
+    Result[id.xy] = float4(step(0.5, Result[id.xy].r), Input[id.xy].r,0,0);
+}

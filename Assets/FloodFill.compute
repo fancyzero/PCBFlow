@@ -1,6 +1,4 @@
-﻿#pragma enable_d3d11_debug_symbols
-// Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSInit
+﻿#pragma kernel CSInit
 #pragma kernel CSFlood
 #pragma kernel CSResolve
 
@@ -16,11 +14,12 @@ struct FloodPixel
 RWTexture2D<float4> Result;
 RWStructuredBuffer<FloodPixel> pixels;
 Texture2D<float4> Mask;
-float iters;
+int2 _Dimensions;
+
 
 uint ToLinear( uint2 id)
 {
-	return ((uint)((id).x+(id).y*4096));
+	return ((uint)((id).x+(id).y*_Dimensions.x));
 } 
 
 
@@ -50,7 +49,7 @@ bool IsMax(FloodPixel test, FloodPixel a, FloodPixel b, FloodPixel c, FloodPixel
 
 uint2 WrapId( int2 id)
 {
-	uint2 newID = (id+int2(4096,4096)) % 4096;
+	uint2 newID = (id+_Dimensions) % _Dimensions;
 	return newID;
 }
 
@@ -152,7 +151,7 @@ void CSResolve(uint3 id : SV_DispatchThreadID)
 	
 	int buffID = ToLinear(id.xy);
 	float4 r;
-	r.xy = pixels[buffID].offset.xy/4096.0;
+	r.xy = pixels[buffID].offset.xy/float2(_Dimensions);
 	r.z = pixels[buffID].valid;
 	r.a = pixels[buffID].steps;
 	Result[id.xy] = r;
