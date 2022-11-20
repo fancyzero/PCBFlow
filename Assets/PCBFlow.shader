@@ -4,7 +4,7 @@
     {
         _MainTex ("Texture", 2D) = "white" {}
         _PCB ("pcb", 2D) = "white" {}
-        _Blend("blend", range(-10,10)) = 0
+        _Blend("blend", range(0,3000)) = 0
     }
     SubShader
     {
@@ -18,6 +18,7 @@
             #pragma fragment frag
             // make fog work
             #pragma multi_compile_fog
+            #pragma enable_d3d11_debug_symbols
             
             #include "UnityCG.cginc"
 
@@ -67,22 +68,24 @@
             fixed4 frag (v2f i) : SV_Target
             {
                 float2 sampleUV = i.uv;
-                sampleUV.y = 1- sampleUV.y;
+                // sampleUV.y = 1- sampleUV.y;
                 float4 pcb = tex2D(_PCB, i.uv);
                 float4 col = tex2D(_MainTex, sampleUV);
-                col.a /= 8472.000000;
-                col.a = saturate(col.a);
+                float steps = col.a;
+                float speed = 1000;//1000 steps per second.
                 
-                float mask = step(0.9991,col.b);
+                float mask = step(0.5,col.b);
 
                 float2 startUV = col.xy + (i.uv);
   
-                float3 startWPos = uv2world(startUV);
+                // float3 startWPos = uv2world(startUV);
                 
-                float timeOfStart = 0;
-                float currentTime = _Blend+startWPos.z ;//+ (hash(startWPos.xz*100000)-0.5)*2;
-                float progress = pow(col.a,2);
-                return smoothstep(0.01,0.1,currentTime-progress)*mask*pcb.g;
+                
+                // float currentTime = _Blend ;//+ (hash(startWPos.xz*100000)-0.5)*2;
+                // float timeOfStart  = c + currentTime;
+                // float currentSteps = (timeOfStart - currentTime)*speed;
+                
+                return step(_Blend, steps)*mask*pcb.g;
 
             }
             ENDCG

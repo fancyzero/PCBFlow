@@ -58,7 +58,7 @@ uint2 WrapId( int2 id)
 void CSInit (uint3 id : SV_DispatchThreadID)
 {
 	float m = step(0.5,Mask[id.xy].g);
-	float s = step(0.9999,Mask[id.xy].r);
+	float s = step(0.5,Mask[id.xy].r);
 	
 	uint buffID = ToLinear(id.xy);
 	pixels[buffID].src = id.xy;

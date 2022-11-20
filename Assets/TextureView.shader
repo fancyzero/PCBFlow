@@ -53,7 +53,7 @@ Shader "Unlit/VerifyCircles"
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
                 fixed4 pcb = tex2D(_PCBTex, i.uv);
-                return lerp( col, pcb, _Blend);
+                return col;
 
             }
             ENDCG

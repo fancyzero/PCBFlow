@@ -18,6 +18,7 @@ public class PCBFlowMapGenerator : MonoBehaviour
 	public RenderTexture textureAnnularRingDetect;
 
 	public Renderer annularRingDetectedDisplay;
+	public Renderer processResultDisplay;
 	public Renderer flowMapDisplay;
 	
 
@@ -72,11 +73,15 @@ public class PCBFlowMapGenerator : MonoBehaviour
         textureAnnularRingDetect = new RenderTexture(initialTexture.width, initialTexture.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
         textureAnnularRingDetect.enableRandomWrite = true;
         textureAnnularRingDetect.Create();
-		
-        coroutine = Iterate();
-		flowMapDisplay.sharedMaterial.mainTexture = textureFlowMap;
+
+		processResultDisplay.sharedMaterial.mainTexture = textureFlowMap;
 		annularRingDetectedDisplay.sharedMaterial.mainTexture = textureAnnularRingDetect;
+		flowMapDisplay.sharedMaterial.mainTexture = textureFlowMap;
+
+        coroutine = Iterate();
         StartCoroutine(coroutine);
+
+
     }
 
 
@@ -90,56 +95,56 @@ public class PCBFlowMapGenerator : MonoBehaviour
 
 		preProcessShader.SetTexture(kInitDetect,"Result", textureAnnularRingDetect );
 		preProcessShader.Dispatch(kInitDetect,initialTexture.width/32, initialTexture.height/32,1);
-
+		yield return null;
 		preProcessShader.SetTexture(kDetectCircle,"Input", initialTexture );
 		preProcessShader.SetTexture(kDetectCircle,"Result", textureAnnularRingDetect );
 		preProcessShader.SetTexture(kDetectCircle,"Kernel", kernelTexture );
 		preProcessShader.SetInt("kernelSize",kernelTexture.width);
 		preProcessShader.SetInt("threshold", detectThreshold);
 		preProcessShader.Dispatch(kDetectCircle,initialTexture.width/32, initialTexture.height/32,1);
-
+		yield return null;
+		
 		preProcessShader.SetTexture(kResolveDetect,"Result", textureAnnularRingDetect );
 		preProcessShader.SetTexture(kResolveDetect,"Input", initialTexture );
 		preProcessShader.Dispatch(kResolveDetect,initialTexture.width/32, initialTexture.height/32,1);
-
 		yield return null;
-		buffer = new ComputeBuffer(initialTexture.width*initialTexture.height, 4*7);
+
+		buffer = new ComputeBuffer(textureAnnularRingDetect.width*textureAnnularRingDetect.height, 4*7);
 		var kInit = floodShader.FindKernel("CSInit");
 		var kFlood = floodShader.FindKernel("CSFlood");
 		var kResolve = floodShader.FindKernel("CSResolve");
-		floodShader.SetInts("_Dimensions", initialTexture.width,initialTexture.height);
+		floodShader.SetInts("_Dimensions", textureAnnularRingDetect.width,textureAnnularRingDetect.height);
 		floodShader.SetBuffer(kInit,"pixels", buffer);
-		floodShader.SetTexture(kInit,"Mask",initialTexture);	
-		floodShader.Dispatch(kInit,initialTexture.width/32, initialTexture.height/32,1);
-
+		floodShader.SetTexture(kInit,"Mask",textureAnnularRingDetect);	
+		floodShader.Dispatch(kInit,textureAnnularRingDetect.width/32, textureAnnularRingDetect.height/32,1);
+		yield return null;
 		floodShader.SetBuffer(kResolve,"pixels", buffer);
 		floodShader.SetTexture(kResolve,"Result",textureFlowMap);			
-		floodShader.Dispatch(kResolve,initialTexture.width/32, initialTexture.height/32,1);
+		floodShader.Dispatch(kResolve,textureAnnularRingDetect.width/32, textureAnnularRingDetect.height/32,1);
 
 		yield return null;
-		for ( int i = 0; i < 1000*3; i++)
+		for ( int i = 0; i < 5000; i++)
 		{
 			Debug.Log(i);
-			floodShader.SetFloat("iter",i+1);
 			//------flood
 			floodShader.SetBuffer(kFlood,"pixels", buffer);
 			floodShader.Dispatch(kFlood,initialTexture.width/32, initialTexture.height/32,1);
 			//------resolve
 			floodShader.SetBuffer(kResolve,"pixels", buffer);
 			floodShader.SetTexture(kResolve,"Result",textureFlowMap);			
-			floodShader.Dispatch(kResolve,initialTexture.width/32, initialTexture.height/32,1);		
+			floodShader.Dispatch(kResolve,textureAnnularRingDetect.width/32, textureAnnularRingDetect.height/32,1);		
 			yield return null;
 
 
 		}
-		buffer.Release();
+		// buffer.Release();
 
-		Texture2D textureAsset = new Texture2D(textureFlowMap.width,textureFlowMap.height, UnityEngine.Experimental.Rendering.DefaultFormat.HDR, UnityEngine.Experimental.Rendering.TextureCreationFlags.None);
-		RenderTexture.active = (textureFlowMap);
-		textureAsset.ReadPixels(new Rect(0,0,textureFlowMap.width,textureFlowMap.height), 0,0);
-		RenderTexture.active = (null);
-		AssetDatabase.CreateAsset(textureAsset, "Assets/pcb4.asset");
-		yield return null;
+		// Texture2D textureAsset = new Texture2D(textureFlowMap.width,textureFlowMap.height, UnityEngine.Experimental.Rendering.DefaultFormat.HDR, UnityEngine.Experimental.Rendering.TextureCreationFlags.None);
+		// RenderTexture.active = (textureFlowMap);
+		// textureAsset.ReadPixels(new Rect(0,0,textureFlowMap.width,textureFlowMap.height), 0,0);
+		// RenderTexture.active = (null);
+		// AssetDatabase.CreateAsset(textureAsset, "Assets/pcb4.asset");
+		// yield return null;
 		
     }
 }
