@@ -129,35 +129,35 @@ public class PCBFlowMapGenerator : MonoBehaviour
         preProcessShader.Dispatch(kResolveDetect, initialTexture.width / 32, initialTexture.height / 32, 1);
         yield return null;
 
-        bufferA = new ComputeBuffer(textureAnnularRingDetect.width * textureAnnularRingDetect.height, 4 * 7);
-        bufferB = new ComputeBuffer(textureAnnularRingDetect.width * textureAnnularRingDetect.height, 4 * 7);
+        bufferA = new ComputeBuffer(textureAnnularRingDetect.width * textureAnnularRingDetect.height, 4 * 8);
+        bufferB = new ComputeBuffer(textureAnnularRingDetect.width * textureAnnularRingDetect.height, 4 * 8);
         var kInit = floodShader.FindKernel("CSInit");
         var kFlood = floodShader.FindKernel("CSFlood");
         var kResolve = floodShader.FindKernel("CSResolve");
         floodShader.SetInts("_Dimensions", textureAnnularRingDetect.width, textureAnnularRingDetect.height);
         floodShader.SetBuffer(kInit, "pixels", bufferA);
         floodShader.SetTexture(kInit, "Mask", textureAnnularRingDetect);
-        floodShader.Dispatch(kInit, textureAnnularRingDetect.width / 32, textureAnnularRingDetect.height / 32, 1);
+        floodShader.Dispatch(kInit, textureAnnularRingDetect.width / 8, textureAnnularRingDetect.height / 8, 1);
         yield return null;
         floodShader.SetBuffer(kResolve, "pixels", bufferA);
         floodShader.SetTexture(kResolve, "Result", textureFlowMap);
-        floodShader.Dispatch(kResolve, textureFlowMap.width / 32, textureFlowMap.height / 32, 1);
+        floodShader.Dispatch(kResolve, textureFlowMap.width / 8, textureFlowMap.height / 8, 1);
 
         yield return null;
         while (!stop)
         {
-                //------flood
-                floodShader.SetBuffer(kFlood, "pixels", bufferA);
-                floodShader.SetBuffer(kFlood, "pixelsOutput", bufferB);
-                floodShader.Dispatch(kFlood, initialTexture.width / 8, initialTexture.height / 8, 1);
-                //------resolve
-                floodShader.SetBuffer(kResolve, "pixels", bufferB);
-                floodShader.SetTexture(kResolve, "Result", textureFlowMap);
-                floodShader.Dispatch(kResolve, textureAnnularRingDetect.width / 32, textureAnnularRingDetect.height / 32, 1);
+            //------flood
+            floodShader.SetBuffer(kFlood, "pixels", bufferA);
+            floodShader.SetBuffer(kFlood, "pixelsOutput", bufferB);
+            floodShader.Dispatch(kFlood, initialTexture.width / 8, initialTexture.height / 8, 1);
+            //------resolve
+            floodShader.SetBuffer(kResolve, "pixels", bufferB);
+            floodShader.SetTexture(kResolve, "Result", textureFlowMap);
+            floodShader.Dispatch(kResolve, textureAnnularRingDetect.width / 8, textureAnnularRingDetect.height / 8, 1);
 
-                var tmp = bufferA;
-                bufferA = bufferB;
-                bufferB = tmp;
+            var tmp = bufferA;
+            bufferA = bufferB;
+            bufferB = tmp;
 
             yield return null;
 

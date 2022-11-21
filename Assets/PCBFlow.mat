@@ -28,8 +28,15 @@ Material:
         m_Texture: {fileID: 2800000, guid: dc81d48828ddec54f836033c21557bf1, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _Swatch:
+        m_Texture: {fileID: 2800000, guid: b1cc62d83f8b54045a9f1eea4fa750b2, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Blend: 0
-    m_Colors: []
+    - _Blend: 1.394
+    m_Colors:
+    - _BloomColor: {r: 1.1898447, g: 1.1898447, b: 1.1898447, a: 1}
+    - _CoolDownColor: {r: 0.15294115, g: 0.20530929, b: 0.5019608, a: 1}
+    - _GrowingColor: {r: 0.5377358, g: 0.5377358, b: 0.5377358, a: 1}
   m_BuildTextureStacks: []

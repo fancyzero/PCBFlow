@@ -64,7 +64,7 @@ uint2 WrapId( int2 id)
 }
 
 
-[numthreads(32,32,1)]
+[numthreads(8,8,1)]
 void CSInit (uint3 id : SV_DispatchThreadID)
 {
 	float m = step(0.5,Mask[id.xy].g);
@@ -74,6 +74,7 @@ void CSInit (uint3 id : SV_DispatchThreadID)
 	pixels[buffID].src = id.xy;
 	pixels[buffID].offset = 0;
 	pixels[buffID].steps = 0;
+	pixels[buffID].maxSteps = 0;
 	if ( s > 0.5 && m > 0.5)
 	{
 		pixels[buffID].filled = 1;
@@ -84,9 +85,13 @@ void CSInit (uint3 id : SV_DispatchThreadID)
 	}
 
 	if ( m > 0.5)		
-	pixels[buffID].valid = 1;
+	{
+		pixels[buffID].steps = 0;
+		pixels[buffID].valid = 1;
+	}
 	else		
 	{
+		pixels[buffID].steps = -1;
 		pixels[buffID].valid = 0;
 		
 	}
@@ -113,26 +118,26 @@ void CSFlood (uint3 id : SV_DispatchThreadID)
 		FloodPixel d = pixels[ToLinear(WrapId(id_d))] ;
 		FloodPixel e = pixels[buffID] ;
 		
-		if ( IsMax( a,b,c,d,e) && a.valid > 0 && a.filled > 0)
+		if ( IsMax( a,b,c,d,e) 		&&  a.filled > 0)
 		{
 			maxValue  = a;
 			filled = true;
 			offset = int2(1,0);
 		}
-		else if ( IsMax( b,c,d,e,a) && b.valid > 0 && b.filled>0)
+		else if ( IsMax( b,c,d,e,a) &&  b.filled>0)
 		{
 			maxValue  = b;
 			filled = true;
 			offset = int2(-1,0);
 		}
-		else if ( IsMax( c,d,e,a,b) && c.valid > 0 && c.filled>0)
+		else if ( IsMax( c,d,e,a,b) &&  c.filled>0)
 		{
 			maxValue  = c;
 			filled = true;
 			offset = int2(0,1);
 
 		}
-		else if ( IsMax( d,e,a,b,c) && d.valid > 0 && d.filled>0)
+		else if ( IsMax( d,e,a,b,c) &&  d.filled>0)
 		{
 			maxValue  = d;
 			filled = true;
@@ -153,21 +158,24 @@ void CSFlood (uint3 id : SV_DispatchThreadID)
 		newValue.filled = 1;
 	}
 
-	pixelsOutput[buffID] = newValue;
+	pixelsOutput[buffID].src = newValue.src;
+	pixelsOutput[buffID].steps = newValue.steps;
+	pixelsOutput[buffID].offset = newValue.offset;
+	pixelsOutput[buffID].valid = newValue.valid;
+	pixelsOutput[buffID].filled = newValue.filled;
 
-	// pixelsOutput[pixelsOutput[buffID].src].
-
+	uint dummy = 0;
+	InterlockedMax(pixelsOutput[ToLinear(newValue.src)].maxSteps,newValue.steps,dummy);
 }
 
 
-[numthreads(32,32,1)]
+[numthreads(8,8,1)]
 void CSResolve(uint3 id : SV_DispatchThreadID)
 {
-	
 	int buffID = ToLinear(id.xy);
 	float4 r;
 	r.xy = pixels[buffID].offset.xy/float2(_Dimensions);
-	r.z = pixels[buffID].valid;
+	r.z = pixels[buffID].maxSteps;
 	r.a = pixels[buffID].steps;
 	Result[id.xy] = r;
 }
