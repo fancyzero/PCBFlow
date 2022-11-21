@@ -4,7 +4,7 @@
     {
         _MainTex ("Texture", 2D) = "white" {}
         _PCB ("pcb", 2D) = "white" {}
-        _Blend("blend", range(0,3000)) = 0
+        _Blend("blend", range(0,2)) = 0
     }
     SubShader
     {
@@ -77,15 +77,18 @@
                 float mask = step(0.5,col.b);
 
                 float2 startUV = col.xy + (i.uv);
-  
+                _Blend = (_Time.y*0.3 % 2)*speed - length(startUV.xy - float2(0,0)) * 100 ;
                 // float3 startWPos = uv2world(startUV);
                 
                 
                 // float currentTime = _Blend ;//+ (hash(startWPos.xz*100000)-0.5)*2;
                 // float timeOfStart  = c + currentTime;
                 // float currentSteps = (timeOfStart - currentTime)*speed;
-                
-                return step(_Blend, steps)*mask*pcb.g;
+                if ( _Blend > 200)
+                    return 0;
+                if ( _Blend > 100)
+                    return mask*float4(1,0,0,1);
+                return step(steps*0.1,_Blend )*mask;//*pcb.g;
 
             }
             ENDCG
