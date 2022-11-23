@@ -173,9 +173,11 @@ void CSFlood (uint3 id : SV_DispatchThreadID)
 void CSResolve(uint3 id : SV_DispatchThreadID)
 {
 	int buffID = ToLinear(id.xy);
+	int startPointBuffID = ToLinear(pixels[buffID].src);
+	
 	float4 r;
 	r.xy = pixels[buffID].offset.xy/float2(_Dimensions);
-	r.z = pixels[buffID].maxSteps;
+	r.z = pixels[startPointBuffID].maxSteps;
 	r.a = pixels[buffID].steps;
 	Result[id.xy] = r;
 }

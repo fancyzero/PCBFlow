@@ -5,10 +5,15 @@
         _MainTex ("Texture", 2D) = "white" {}
         _Swatch ("Swatch", 2D) = "white" {}
         _PCB ("pcb", 2D) = "white" {}
-        _Blend("blend", range(0,2)) = 0
+        _Blend("blend", range(0,40)) = 0
+        _LeadWidth("Lead Width", range(0,1)) = 0.1
+        _StepsPerSec("Steps per second", float) = 1000
         [HDR] _GrowingColor("_GrowingColor", color) = (1,1,1,1)
-        [HDR] _BloomColor("_BloomColor", color) = (2,0,0,1)
-        [HDR] _CoolDownColor("_CoolDownColor", color) = (0.5,0,0,1)
+        [HDR] _UnreachedColor("unreached Color", color) = (0.1,0.1,1,1)
+        [HDR] _LeadColor("Lead Color", color) = (1,0,0,1)
+        [HDR] _BloomColor("_BloomColor", color) = (2,2,0,1)
+        [HDR] _CoolDownColor("_CoolDownColor", color) = (0.5,0.2,0,1)
+        
 
     }
     SubShader
@@ -48,7 +53,8 @@
             float4 _GrowingColor;
             float4 _BloomColor;
             float4 _CoolDownColor;
-
+            float4 _UnreachedColor;
+            float4 _LeadColor;
             sampler2D _Swatch;
             
             sampler2D _PCB;
@@ -90,44 +96,57 @@
                 uint  n = 1103515245U * ( (q.x  ) ^ (q.y>>3U) );
                 return float(n) * (1.0/float(0xffffffffU));
             }
+
+            struct PCBData
+            {
+                float2 startUV;
+                float steps;
+                float maxSteps;
+            };
+
+            PCBData DecodePCBData( float2 uv)
+            {
+                PCBData ret;
+                float4 data = tex2D(_MainTex, uv);
+                ret.startUV = data.xy + uv;
+                float2 iuv = (floor(ret.startUV*_MainTex_TexelSize.zw) + 0.5)*_MainTex_TexelSize.xy;
+                ret.maxSteps = data.b;//tex2D(_MainTex,iuv).b;
+                ret.steps = data.a;
+                return ret;
+            }
+            float _StepsPerSec;
+            float _LeadWidth;
+            float4 GetColor( PCBData pData, float currentTime )
+            {
+                float normalizedProgress = (currentTime*_StepsPerSec/pData.maxSteps);
+                float growingTimespan = pData.maxSteps/_StepsPerSec;
+                float progress = pData.steps/_StepsPerSec;
+                float4 ret;
+
+                ret = lerp( _GrowingColor, _LeadColor, smoothstep( _LeadWidth,_LeadWidth*0.7, currentTime - progress));
+                
+                
+                ret = lerp( ret, _UnreachedColor, smoothstep(0.02,0,currentTime - progress));
+                float4 bloomColor = lerp(_CoolDownColor,_BloomColor, saturate(exp(-(currentTime-growingTimespan)*0.4)));
+                ret = lerp( ret,bloomColor, smoothstep(1.0,1.2,normalizedProgress));
+                
+                return ret;
+                
+            }
+
             fixed4 frag (v2f i) : SV_Target
             {
                 float2 sampleUV = i.uv;
                 // sampleUV.y = 1- sampleUV.y;
                 float4 pcb = tex2D(_PCB, i.uv);
                 float4 col = tex2D(_MainTex, sampleUV);
-                float steps = col.a;
-                float speed = 5000;//1000 steps per second.
                 
-                float mask = step(col.a,0xfffff);
 
-                float2 startUV = col.xy + (i.uv);
-                float2 iuv = (floor(startUV * _MainTex_TexelSize.zw) + 0.5) * _MainTex_TexelSize.xy;
-                float maxSteps = tex2Dlod(_MainTex, float4(iuv, 0, 0)).b;
-                //_Blend = (_Time.y*0.3 % 3)*speed - length(startUV.xy - float2(0,0)) * 100 ;
-                float3 startWPos = uv2world(startUV);
+                PCBData pData = DecodePCBData(i.uv);
+                float3 startWPos = uv2world(pData.startUV);
                 float t = _Time.y;
-                t -= length(startUV.xy - float2(0,0)) * 100;
-                _Blend =  ((t+hash33(iuv.xyx*1000,4823).x*0.3-0.15)*0.3 % 2)* 2000 ;
-                // float currentTime = _Blend ;//+ 
-                // float timeOfStart  = c + currentTime;
-                // float currentSteps = (timeOfStart - currentTime)*speed;
-                // if ( _Blend > maxSteps+20)
-                //     return 0;
-
-                //
-
-                // float4 randomColor = float4(hash(startWPos.xz*11131),hash(startWPos.xz*1231+43),hash(startWPos.xz*5322+33),1);
-                float lifeTime = saturate((_Blend-maxSteps)/100);
-                float taileTime = ((_Blend-maxSteps-100)/100);
-                mask =  step(steps,_Blend )*mask;
-
-                if (_Blend - steps < 10)
-                    _GrowingColor  *= 2.2;
-                _BloomColor *= tex2D(_Swatch, float4(hash33(iuv.xyx*1000,4823),0).xx);
-                float4 appearColor = lerp(_GrowingColor,_BloomColor, smoothstep(0.0,0.2,lifeTime));
-                appearColor = lerp(_CoolDownColor,appearColor, saturate(exp(-taileTime*0.2)));
-                return mask * appearColor;
+                float mask = step(pData.steps,0xfffff);
+                return mask * GetColor(pData, t%10);
             }
             ENDCG
         }
