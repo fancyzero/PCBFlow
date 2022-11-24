@@ -20,8 +20,12 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _FlowMap:
+        m_Texture: {fileID: 2800000, guid: a476c330b541f6d45b62cec560542062, type: 3}
+        m_Scale: {x: 2, y: 2}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 5cb49f82721b45b45bb55789776d1a82, type: 2}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _PCB:
@@ -34,6 +38,15 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Blend: 0
-    m_Colors: []
+    - _Blend: 0.534
+    - _LeadWidth: 0.055
+    - _SobelStep: 1.19
+    - _StepsPerSec: 800
+    - _UVScale: 0.057
+    m_Colors:
+    - _BloomColor: {r: 3.8745096, g: 0.7935211, b: 0, a: 1}
+    - _CoolDownColor: {r: 0, g: 0.008022291, b: 0.0808246, a: 1}
+    - _GrowingColor: {r: 0.022472408, g: 0.9528302, b: 0.5224074, a: 1}
+    - _LeadColor: {r: 12.494319, g: 0.45790696, b: 5.6257143, a: 1}
+    - _UnreachedColor: {r: 0, g: 0.007843138, b: 0.08235294, a: 1}
   m_BuildTextureStacks: []

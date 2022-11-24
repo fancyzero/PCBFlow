@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using System.IO;
 [ExecuteInEditMode]
 public class PCBFlowMapGenerator : MonoBehaviour
 {
@@ -168,7 +169,8 @@ public class PCBFlowMapGenerator : MonoBehaviour
         RenderTexture.active = (textureFlowMap);
         textureAsset.ReadPixels(new Rect(0, 0, textureFlowMap.width, textureFlowMap.height), 0, 0);
         RenderTexture.active = (null);
-        AssetDatabase.CreateAsset(textureAsset, "Assets/pcb4.asset");
+        textureAsset.EncodeToEXR(Texture2D.EXRFlags.OutputAsFloat);
+        File.WriteAllBytes("Assets/PCBFlow.exr", textureAsset.EncodeToEXR());
         yield return null;
 
     }

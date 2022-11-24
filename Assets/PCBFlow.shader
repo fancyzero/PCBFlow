@@ -143,7 +143,6 @@
                 
 
                 PCBData pData = DecodePCBData(i.uv);
-                float3 startWPos = uv2world(pData.startUV);
                 float t = _Time.y;
                 float mask = step(pData.steps,0xfffff);
                 return mask * GetColor(pData, t%10);
